@@ -1,0 +1,512 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بلدية هيت - الموقع الرسمي</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts: Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f8fafc;
+            scroll-behavior: smooth;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #10b981;
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #059669;
+        }
+
+        /* Map Container */
+        #map {
+            height: 500px;
+            width: 100%;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 1;
+        }
+
+        .leaflet-popup-content-wrapper {
+            font-family: 'Cairo', sans-serif;
+            border-radius: 0.5rem;
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom Colors based on request */
+        .theme-green { color: #10b981; }
+        .bg-theme-green { background-color: #10b981; }
+        .theme-yellow { color: #fbbf24; }
+        .bg-theme-yellow { background-color: #fbbf24; }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass-effect shadow-sm transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-theme-green rounded-full flex items-center justify-center text-white text-xl">
+                        <i class="fas fa-landmark"></i>
+                    </div>
+                    <span class="text-2xl font-bold text-gray-800">بلدية هيت</span>
+                </div>
+                
+                <div class="hidden md:flex space-x-reverse space-x-8 items-center">
+                    <a href="#home" class="text-gray-600 hover:text-green-600 font-semibold transition">الرئيسية</a>
+                    <a href="#services" class="text-gray-600 hover:text-green-600 font-semibold transition">الخدمات</a>
+                    <a href="#map-section" class="text-gray-600 hover:text-green-600 font-semibold transition">الخريطة التفاعلية</a>
+                    <a href="#complaints" class="text-gray-600 hover:text-green-600 font-semibold transition">الشكاوى</a>
+                    <a href="#contact" class="text-gray-600 hover:text-green-600 font-semibold transition">تواصل معنا</a>
+                </div>
+
+                <!-- Admin Simulation Toggle -->
+                <div class="hidden md:flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
+                    <span class="text-xs font-bold text-gray-500">وضع الموظف</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="adminToggle" class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                    </label>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="text-gray-600 hover:text-green-600 focus:outline-none">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 text-right">
+                <a href="#home" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-green-600 hover:bg-green-50">الرئيسية</a>
+                <a href="#map-section" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-green-600 hover:bg-green-50">الخريطة</a>
+                <a href="#complaints" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-green-600 hover:bg-green-50">الشكاوى</a>
+                
+                <div class="px-3 py-2 flex items-center justify-between bg-gray-50 rounded mt-2">
+                    <span class="text-sm font-bold text-gray-600">عرض الآليات (للموظفين)</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="adminToggleMobile" class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header id="home" class="relative pt-32 pb-20 bg-gradient-to-br from-green-50 to-yellow-50 overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#10B981" d="M44.7,-76.4C58.9,-69.2,71.8,-59.1,81.6,-46.6C91.4,-34.1,98.1,-19.2,95.8,-4.9C93.5,9.4,82.2,23.1,71.6,35.2C61,47.3,51.1,57.8,39.3,65.3C27.5,72.8,13.7,77.3,-0.9,78.9C-15.5,80.5,-31,79.2,-44.2,72.3C-57.4,65.4,-68.3,52.9,-75.6,39.2C-82.9,25.5,-86.6,10.6,-84.3,-3.3C-82,-17.2,-73.7,-30.1,-63.4,-40.4C-53.1,-50.7,-40.8,-58.4,-28.3,-66.4C-15.8,-74.4,-3.1,-82.7,10.2,-81.4C23.5,-80.1,30.5,-69.2,44.7,-76.4Z" transform="translate(100 100)" />
+            </svg>
+        </div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center fade-in">
+                <h1 class="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                    مرحباً بكم في <span class="text-green-600">بلدية هيت</span>
+                </h1>
+                <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+                    نعمل معاً من أجل مدينة أجمل، أنظف، وأكثر تطوراً. منصتكم الرقمية للتواصل المباشر وخدمة المجتمع.
+                </p>
+                <div class="flex justify-center gap-4 flex-wrap">
+                    <a href="#complaints" class="bg-green-600 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-green-700 transition transform hover:-translate-y-1">
+                        تقديم شكوى
+                        <i class="fas fa-bullhorn mr-2"></i>
+                    </a>
+                    <a href="#map-section" class="bg-yellow-400 text-gray-900 px-8 py-3 rounded-full font-bold shadow-lg hover:bg-yellow-500 transition transform hover:-translate-y-1">
+                        استكشاف المدينة
+                        <i class="fas fa-map-marked-alt mr-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Services Quick View -->
+    <section id="services" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="p-6 bg-gray-50 rounded-2xl text-center hover:shadow-lg transition border border-gray-100">
+                    <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                        <i class="fas fa-broom"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">النظافة والبيئة</h3>
+                    <p class="text-gray-500">متابعة دورية لآليات التنظيف والحفاظ على جمالية المدينة.</p>
+                </div>
+                <div class="p-6 bg-gray-50 rounded-2xl text-center hover:shadow-lg transition border border-gray-100">
+                    <div class="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                        <i class="fas fa-tree"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">الحدائق والتشجير</h3>
+                    <p class="text-gray-500">الاهتمام بالمساحات الخضراء والمتنزهات العامة للعوائل.</p>
+                </div>
+                <div class="p-6 bg-gray-50 rounded-2xl text-center hover:shadow-lg transition border border-gray-100">
+                    <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                        <i class="fas fa-hard-hat"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">المشاريع والتخطيط</h3>
+                    <p class="text-gray-500">إدارة المشاريع العمرانية وتطوير البنية التحتية.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Map Section -->
+    <section id="map-section" class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-gray-900">خريطة هيت التفاعلية</h2>
+                <p class="text-gray-600 mt-2">استكشف المواقع الحيوية وتتبع خدمات البلدية</p>
+                <div id="admin-badge" class="hidden inline-block mt-2 px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs font-bold border border-red-200">
+                    <i class="fas fa-lock"></i> وضع الموظف مفعل: آليات البلدية ظاهرة
+                </div>
+            </div>
+
+            <div class="relative bg-white p-2 rounded-2xl shadow-xl">
+                <div id="map"></div>
+                
+                <!-- Custom Legend overlay -->
+                <div class="absolute bottom-6 right-6 z-[1000] bg-white/90 backdrop-blur p-4 rounded-xl shadow-lg border border-gray-200 text-sm">
+                    <h4 class="font-bold mb-2 border-b pb-1">دليل الخريطة</h4>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                        <span>مواقع عامة (مستشفيات، مدارس)</span>
+                    </div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                        <span>متنزهات وحدائق</span>
+                    </div>
+                    <!-- Hidden by default, shown via JS -->
+                    <div id="vehicle-legend" class="hidden mt-2 pt-2 border-t border-gray-200">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="fas fa-truck text-orange-500"></i>
+                            <span class="text-orange-600 font-semibold">كابسة نفايات</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-snowplow text-yellow-600"></i>
+                            <span class="text-yellow-700 font-semibold">شفل/آلية ثقيلة</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Complaints Section -->
+    <section id="complaints" class="py-20 bg-white relative">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col md:flex-row">
+                
+                <!-- Form Side -->
+                <div class="w-full md:w-2/3 p-8 md:p-12">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">تقديم شكوى أو ملاحظة</h2>
+                    <p class="text-gray-500 mb-8">صوتك مسموع.. ساعدنا في تحسين مدينتنا بإبلاغنا عن المشاكل فوراً.</p>
+                    
+                    <form onsubmit="event.preventDefault(); alert('تم إرسال الشكوى بنجاح! سنقوم بمتابعتها.');" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">الاسم الكامل</label>
+                                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition bg-gray-50" placeholder="اسم المواطن" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">رقم الهاتف</label>
+                                <input type="tel" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition bg-gray-50" placeholder="07xxxxxxxxx" required>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">نوع الشكوى</label>
+                            <select class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition bg-gray-50">
+                                <option>تراكم نفايات</option>
+                                <option>حفرة في الطريق</option>
+                                <option>عطل إنارة</option>
+                                <option>تجاوز على الرصيف</option>
+                                <option>أخرى</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">تفاصيل الشكوى</label>
+                            <textarea rows="4" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition bg-gray-50" placeholder="يرجى وصف المشكلة بدقة..." required></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Image Upload -->
+                            <div class="relative group">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">إرفاق صورة</label>
+                                <div class="flex items-center justify-center w-full">
+                                    <label class="flex flex-col items-center justify-center w-full h-14 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-green-500 transition">
+                                        <div class="flex items-center gap-2 pt-1">
+                                            <i class="fas fa-camera text-gray-400 group-hover:text-green-500"></i>
+                                            <p class="text-sm text-gray-500 group-hover:text-green-600">اختر صورة</p>
+                                        </div>
+                                        <input type="file" class="hidden" accept="image/*" />
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- GPS Location -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">موقع المشكلة</label>
+                                <button type="button" onclick="getLocation()" id="gpsBtn" class="w-full h-14 bg-yellow-100 text-yellow-700 border border-yellow-300 rounded-lg hover:bg-yellow-200 transition flex items-center justify-center gap-2 font-semibold">
+                                    <i class="fas fa-location-crosshairs"></i>
+                                    <span>تحديد موقعي (GPS)</span>
+                                </button>
+                                <input type="hidden" id="coords" name="coords">
+                                <p id="locationStatus" class="text-xs text-gray-500 mt-1 mr-1"></p>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition shadow-lg mt-4 text-lg">
+                            إرسال الشكوى
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Decorative Side -->
+                <div class="w-full md:w-1/3 bg-green-600 p-8 flex flex-col justify-center text-white relative overflow-hidden">
+                    <div class="absolute inset-0 bg-pattern opacity-10"></div>
+                    <div class="relative z-10 text-center">
+                        <i class="fas fa-comments text-6xl mb-6 text-yellow-400"></i>
+                        <h3 class="text-2xl font-bold mb-4">نحن هنا لخدمتك</h3>
+                        <p class="text-green-100 mb-6">يتم مراجعة الشكاوى يومياً من قبل فريق متخصص في البلدية.</p>
+                        <div class="border-t border-green-500 pt-6 mt-6">
+                            <p class="text-sm font-semibold mb-2">للطوارئ يرجى الاتصال:</p>
+                            <a href="tel:12345" class="text-2xl font-bold text-yellow-300 dir-ltr">123-456</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Media Section -->
+    <section id="contact" class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold text-gray-900 mb-10">تواصل معنا عبر المنصات</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                <a href="#" class="group p-6 bg-white rounded-xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1">
+                    <i class="fab fa-facebook text-4xl text-blue-600 mb-3 group-hover:scale-110 transition duration-300 block"></i>
+                    <span class="font-semibold text-gray-700">فيسبوك</span>
+                </a>
+                <a href="#" class="group p-6 bg-white rounded-xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1">
+                    <i class="fab fa-twitter text-4xl text-sky-400 mb-3 group-hover:scale-110 transition duration-300 block"></i>
+                    <span class="font-semibold text-gray-700">تويتر</span>
+                </a>
+                <a href="#" class="group p-6 bg-white rounded-xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1">
+                    <i class="fab fa-instagram text-4xl text-pink-600 mb-3 group-hover:scale-110 transition duration-300 block"></i>
+                    <span class="font-semibold text-gray-700">انستغرام</span>
+                </a>
+                <a href="#" class="group p-6 bg-white rounded-xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1">
+                    <i class="fab fa-youtube text-4xl text-red-600 mb-3 group-hover:scale-110 transition duration-300 block"></i>
+                    <span class="font-semibold text-gray-700">يوتيوب</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-10 border-t-4 border-green-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-landmark text-2xl text-yellow-400"></i>
+                    <span class="text-xl font-bold">بلدية هيت</span>
+                </div>
+                <div class="text-gray-400 text-sm">
+                    جميع الحقوق محفوظة &copy; 2023 بلدية هيت - محافظة الأنبار
+                </div>
+                <div class="flex gap-4">
+                    <a href="#" class="text-gray-400 hover:text-white transition">سياسة الخصوصية</a>
+                    <a href="#" class="text-gray-400 hover:text-white transition">شروط الاستخدام</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        // --- Mobile Menu Toggle ---
+        const btn = document.getElementById('mobile-menu-btn');
+        const menu = document.getElementById('mobile-menu');
+
+        btn.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
+        });
+
+        // --- GPS Functionality for Form ---
+        function getLocation() {
+            const status = document.getElementById("locationStatus");
+            const btn = document.getElementById("gpsBtn");
+            const coordsInput = document.getElementById("coords");
+
+            if (!navigator.geolocation) {
+                status.textContent = "المتصفح لا يدعم تحديد الموقع.";
+                return;
+            }
+
+            status.textContent = "جاري تحديد الموقع...";
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحميل...';
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const long = position.coords.longitude;
+                    coordsInput.value = `${lat}, ${long}`;
+                    status.innerHTML = `<span class="text-green-600"><i class="fas fa-check"></i> تم تحديد الموقع بنجاح (${lat.toFixed(4)}, ${long.toFixed(4)})</span>`;
+                    btn.innerHTML = '<i class="fas fa-check"></i> تم التحديد';
+                    btn.classList.replace('bg-yellow-100', 'bg-green-100');
+                    btn.classList.replace('text-yellow-700', 'text-green-700');
+                    btn.classList.replace('border-yellow-300', 'border-green-300');
+                },
+                () => {
+                    status.textContent = "تعذر الحصول على الموقع. يرجى تفعيل الـ GPS.";
+                    btn.innerHTML = '<i class="fas fa-location-crosshairs"></i> إعادة المحاولة';
+                }
+            );
+        }
+
+        // --- Map Initialization & Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Hit City Coordinates (Approximate center)
+            const hitLat = 33.6333;
+            const hitLng = 42.8167;
+
+            const map = L.map('map').setView([hitLat, hitLng], 14);
+
+            // Using CartoDB Voyager for a clean, white/minimalist map style
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            // --- Custom Icons ---
+            const createIcon = (iconName, color) => {
+                return L.divIcon({
+                    html: `<div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
+                            <i class="fas ${iconName}" style="color: white; font-size: 14px;"></i>
+                           </div>`,
+                    className: 'custom-div-icon',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15],
+                    popupAnchor: [0, -15]
+                });
+            };
+
+            // Public Markers (Always Visible)
+            const hospitalIcon = createIcon('fa-hospital', '#3b82f6');
+            const parkIcon = createIcon('fa-tree', '#10b981');
+
+            L.marker([33.6400, 42.8200], {icon: hospitalIcon}).addTo(map)
+                .bindPopup("<b>مستشفى هيت العام</b><br>خدمات طبية 24/7");
+
+            L.marker([33.6300, 42.8100], {icon: parkIcon}).addTo(map)
+                .bindPopup("<b>متنزه الكورنيش</b><br>منطقة ترفيهية للعوائل");
+
+            // --- Admin/Private Layer (Vehicles) ---
+            const truckIcon = createIcon('fa-truck', '#f97316'); // Orange
+            const plowIcon = createIcon('fa-snowplow', '#eab308'); // Yellow
+
+            // Fake vehicle data
+            const vehicles = [
+                { id: "T-101", type: "truck", lat: 33.6350, lng: 42.8150, name: "كابسة نفايات #1", tag: "نظافة" },
+                { id: "T-102", type: "truck", lat: 33.6320, lng: 42.8250, name: "كابسة نفايات #2", tag: "نظافة" },
+                { id: "P-05", type: "plow", lat: 33.6380, lng: 42.8120, name: "شفل هيونداي", tag: "طرق" }
+            ];
+
+            const vehicleMarkers = L.layerGroup();
+
+            vehicles.forEach(v => {
+                const icon = v.type === 'truck' ? truckIcon : plowIcon;
+                const marker = L.marker([v.lat, v.lng], {icon: icon})
+                    .bindPopup(`<b>${v.name}</b><br>TAG: <span class="bg-gray-200 px-1 rounded text-xs">${v.tag}</span><br>الحالة: يعمل`);
+                vehicleMarkers.addLayer(marker);
+            });
+
+            // --- Admin Toggle Logic ---
+            const toggle1 = document.getElementById('adminToggle');
+            const toggle2 = document.getElementById('adminToggleMobile');
+            const adminBadge = document.getElementById('admin-badge');
+            const vehicleLegend = document.getElementById('vehicle-legend');
+
+            function toggleAdminMode(isChecked) {
+                if (isChecked) {
+                    map.addLayer(vehicleMarkers);
+                    adminBadge.classList.remove('hidden');
+                    vehicleLegend.classList.remove('hidden');
+                    // Sync toggles
+                    toggle1.checked = true;
+                    toggle2.checked = true;
+                } else {
+                    map.removeLayer(vehicleMarkers);
+                    adminBadge.classList.add('hidden');
+                    vehicleLegend.classList.add('hidden');
+                    // Sync toggles
+                    toggle1.checked = false;
+                    toggle2.checked = false;
+                }
+            }
+
+            toggle1.addEventListener('change', (e) => toggleAdminMode(e.target.checked));
+            toggle2.addEventListener('change', (e) => toggleAdminMode(e.target.checked));
+
+            // Simple loop to simulate movement (Optional nice-to-have)
+            setInterval(() => {
+                if(map.hasLayer(vehicleMarkers)) {
+                    vehicleMarkers.eachLayer(layer => {
+                        const currentLatLng = layer.getLatLng();
+                        // Random tiny movement
+                        const latChange = (Math.random() - 0.5) * 0.0002;
+                        const lngChange = (Math.random() - 0.5) * 0.0002;
+                        layer.setLatLng([currentLatLng.lat + latChange, currentLatLng.lng + lngChange]);
+                    });
+                }
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
