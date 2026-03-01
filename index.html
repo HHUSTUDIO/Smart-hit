@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>بلدية هيت - الموقع الرسمي</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+body { font-family: 'Cairo', sans-serif; background:#f8fafc; }
+.hidden { display:none; }
+#map { height:500px; border-radius:1rem; }
+</style>
+</head>
+
+<body class="text-gray-800">
+
+<!-- ================= LOGIN MODAL ================= -->
+<div id="loginModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+<div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl">
+
+<h2 class="text-2xl font-bold text-center mb-6">تسجيل الدخول</h2>
+
+<div class="flex border-b mb-6">
+<button onclick="showEmployee()" id="tabEmployee"
+class="flex-1 py-2 font-bold border-b-2 border-green-600 text-green-600">موظف</button>
+<button onclick="showCitizen()" id="tabCitizen"
+class="flex-1 py-2 font-bold text-gray-500">مواطن</button>
+</div>
+
+<div id="employeeBox">
+<input type="password" id="employeeCode" placeholder="ادخل كود الموظف"
+class="w-full border p-3 rounded-lg mb-4">
+<button onclick="loginEmployee()"
+class="w-full bg-green-600 text-white py-3 rounded-lg font-bold">دخول</button>
+</div>
+
+<div id="citizenBox" class="hidden">
+<input type="email" id="citizenEmail" placeholder="البريد الإلكتروني"
+class="w-full border p-3 rounded-lg mb-3">
+<input type="password" id="citizenPass" placeholder="كلمة المرور"
+class="w-full border p-3 rounded-lg mb-3">
+<button onclick="registerCitizen()"
+class="w-full bg-gray-600 text-white py-2 rounded-lg mb-2">تسجيل حساب جديد</button>
+<button onclick="loginCitizen()"
+class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">دخول</button>
+</div>
+
+</div>
+</div>
+
+<!-- ================= NAVBAR ================= -->
+<nav class="bg-white shadow p-4 flex justify-between items-center">
+<span class="font-bold text-xl text-green-600">بلدية هيت</span>
+<div>
+<span id="userRole" class="ml-4 text-sm text-gray-600"></span>
+<button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg">
+تسجيل خروج
+</button>
+</div>
+</nav>
+
+<!-- ================= HERO ================= -->
+<section class="p-10 text-center">
+<h1 class="text-4xl font-bold mb-4">مرحباً بكم في بلدية هيت</h1>
+<p class="text-gray-600">منصتكم الرقمية لخدمة المواطنين</p>
+</section>
+
+<!-- ================= MAP ================= -->
+<section class="p-10">
+<h2 class="text-2xl font-bold text-center mb-6">خريطة هيت التفاعلية</h2>
+<div id="map"></div>
+</section>
+
+<!-- ================= LEAFLET JS ================= -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+/* ================= TAB SWITCH ================= */
+function showEmployee(){
+employeeBox.classList.remove("hidden");
+citizenBox.classList.add("hidden");
+}
+
+function showCitizen(){
+citizenBox.classList.remove("hidden");
+employeeBox.classList.add("hidden");
+}
+
+/* ================= LOGIN ================= */
+function loginEmployee(){
+let code = employeeCode.value;
+if(code === "hit03"){
+localStorage.setItem("userRole","employee");
+enterSite("موظف بلدية");
+enableAdminMode();
+}else{
+alert("كود غير صحيح");
+}
+}
+
+function registerCitizen(){
+let email = citizenEmail.value;
+let pass = citizenPass.value;
+if(email && pass){
+localStorage.setItem("citizen_"+email,pass);
+alert("تم إنشاء الحساب");
+}
+}
+
+function loginCitizen(){
+let email = citizenEmail.value;
+let pass = citizenPass.value;
+if(localStorage.getItem("citizen_"+email) === pass){
+localStorage.setItem("userRole","citizen");
+enterSite("مواطن");
+}else{
+alert("بيانات غير صحيحة");
+}
+}
+
+function enterSite(roleText){
+loginModal.style.display="none";
+userRole.innerText = "مرحباً، " + roleText;
+}
+
+function logout(){
+localStorage.clear();
+location.reload();
+}
+
+/* ================= MAP ================= */
+const map = L.map('map').setView([33.6333,42.8167],14);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+maxZoom:19
+}).addTo(map);
+
+const hospitalIcon = L.icon({
+iconUrl:"https://cdn-icons-png.flaticon.com/512/2967/2967350.png",
+iconSize:[32,32]
+});
+
+L.marker([33.6400,42.8200],{icon:hospitalIcon})
+.addTo(map).bindPopup("مستشفى هيت العام");
+
+/* ===== VEHICLES (للموظف فقط) ===== */
+const vehicleLayer = L.layerGroup();
+
+function enableAdminMode(){
+let truck = L.marker([33.6350,42.8150])
+.bindPopup("كابسة نفايات");
+vehicleLayer.addLayer(truck);
+map.addLayer(vehicleLayer);
+}
+
+/* ================= SESSION CHECK ================= */
+window.onload = function(){
+let role = localStorage.getItem("userRole");
+if(role){
+if(role==="employee"){
+enterSite("موظف بلدية");
+enableAdminMode();
+}
+if(role==="citizen"){
+enterSite("مواطن");
+}
+}
+}
+
+</script>
+
+</body>
+</html>
